@@ -1,6 +1,8 @@
 package com.example.simple_arcompass
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.Sensor
@@ -8,11 +10,14 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.net.Uri
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.snackbar.Snackbar
 import com.google.ar.core.HitResult
@@ -28,6 +33,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlin.math.abs
 
 const val MY_PERMISSIONS_REQUEST_CAMERA = 3
+const val CHANNEL_ID = "somexxx"
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
@@ -48,6 +54,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         val buttonAdd = btn_add_pointer
         val buttonAngle = btn_angle
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        createNotificationChannel()
 
         if (ContextCompat.checkSelfPermission(
                 this,
@@ -122,6 +129,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 "No direction saved",
                 Snackbar.LENGTH_SHORT
             ).show()
+            val notif = NotificationCompat.Builder(this, CHANNEL_ID).setSmallIcon(R.drawable.ic_stat_name)
+                .setContentTitle("Compass").setContentText("Placed new compass pointer").setPriority(NotificationCompat.PRIORITY_HIGH).build()
+            with(NotificationManagerCompat.from(this)) {
+                notify(0, notif)
+            }
+
         } else if (frame != null && pointerRenderable != null) {
             hits = frame.hitTest(point.x.toFloat(), point.y.toFloat())
             for (hit in hits) {
@@ -150,6 +163,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     node.setParent(anchorNode)
                     node.renderable = pointerRenderable
                     node.select()
+
                     break
                 }
             }
@@ -157,6 +171,19 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "channel name"
+            val descriptionText = "channel description"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
 
     private fun getViewCenter(): android.graphics.Point {
         val view = findViewById<View>(android.R.id.content)
